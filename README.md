@@ -61,7 +61,7 @@ pip install -r requirements.txt
 
 # Run Taskley
 python taskley.py
-<p align="center"> 💡 <i>Prebuilt installers are not provided — this repository is source-first.</i> </p>
+<br> <p align="center"> 💡 <i>Prebuilt installers are not provided — this repository is source-first.</i> </p>
 <h2 align="center"><b>Requirements</b></h2> <p align="center"> <b>Python 3.9+</b> (recommended)<br> <b>PySide6</b> — for the user interface<br> <b>pygame</b> — for MP3 playback (platform codec support may vary)<br> <b>Optional:</b> a licensed MP3 placed in <code>honk/honk.mp3</code> for the default honk sound </p>
 <h2 align="center"><b>Configuration</b></h2> <p align="center">
 Setting	Description
