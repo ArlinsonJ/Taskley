@@ -9,6 +9,7 @@
 <h2 align="center">Screenshots</h2>
 
 <div align="center">
+  <br>
   <p align="center"><strong>Light Mode</strong></p>
   <br>
   <p align="center">
@@ -20,6 +21,7 @@
 <br><br>
 
 <div align="center">
+  <br>
   <p align="center"><strong>Dark Mode</strong></p>
   <br>
   <p align="center">
@@ -31,6 +33,7 @@
 <br><br>
 
 <div align="center">
+  <br>
   <p align="center"><strong>Add Task</strong></p>
   <br>
   <p align="center">
@@ -42,6 +45,7 @@
 <br><br>
 
 <div align="center">
+  <br>
   <p align="center"><strong>Task Details</strong></p>
   <br>
   <p align="center">
@@ -53,6 +57,7 @@
 <br><br>
 
 <div align="center">
+  <br>
   <p align="center"><strong>Edit Task</strong></p>
   <br>
   <p align="center">
@@ -64,6 +69,7 @@
 <br><br>
 
 <div align="center">
+  <br>
   <p align="center"><strong>Settings</strong></p>
   <br>
   <p align="center">
@@ -75,6 +81,7 @@
 <br><br>
 
 <div align="center">
+  <br>
   <p align="center"><strong>Minimized</strong></p>
   <br>
   <p align="center">
