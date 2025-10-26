@@ -2,7 +2,21 @@
 
 <h1 align="center"> <strong>Taskley</strong> — A Lightweight Desktop Task Manager with Reminders</h1>
 
-<p align="center"> <img alt="Taskley Screenshot" src="https://raw.githubusercontent.com/ArlinsonJ/Taskley/master/extra/promo/taskley-readme.png"> </p>
+<h2 align="center">Screenshots</h2>
+
+light-mode.png <p align="center"> <img alt="Taskley light mode screenshot" src="https://github.com/ArlinsonJ/Taskley/blob/e67439cc60936ea0b19fdbf790d047eb911eace5/Images/light-mode.png"> </p> Description: Main app window in the light theme showing the logo, clock, task list, filters, and primary actions.
+
+dark-mode.png <p align="center"> <img alt="Taskley dark mode screenshot" src="https://github.com/ArlinsonJ/Taskley/blob/e67439cc60936ea0b19fdbf790d047eb911eace5/Images/dark-mode.png"> </p> Description: Same main view using the dark theme to show colors, contrast, and style parity. Dark Mode displays times in military format by default.
+
+add-task.png <p align="center"> <img alt="Taskley add task screenshot" src="https://github.com/ArlinsonJ/Taskley/blob/e67439cc60936ea0b19fdbf790d047eb911eace5/Images/add-task.png.png"> </p> Description: Add Task page demonstrating the title, notes, due-date/timer controls, recurring toggle, and custom category input.
+
+task-details.png <p align="center"> <img alt="Taskley task details screenshot" src="https://github.com/ArlinsonJ/Taskley/blob/e67439cc60936ea0b19fdbf790d047eb911eace5/Images/task-details.pnghttps://github.com/ArlinsonJ/Taskley/blob/e67439cc60936ea0b19fdbf790d047eb911eace5/Images/task-details.png"> </p> Description: Task details view with formatted due date, notes, category, and recurring information.
+
+edit-task.png <p align="center"> <img alt="Taskley edit task screenshot" src="https://github.com/ArlinsonJ/Taskley/blob/e67439cc60936ea0b19fdbf790d047eb911eace5/Images/edit-task.png"> </p> Description: Edit Task page pre-filled with Title, Notes, Due Date/Timer, Category (including custom), and Recurring toggle; inline validation for Title.
+
+settings.png <p align="center"> <img alt="Taskley settings screenshot" src="https://github.com/ArlinsonJ/Taskley/blob/e67439cc60936ea0b19fdbf790d047eb911eace5/Images/settings.png"> </p> Description: Settings page showing toggles (Dark Mode, Military Time, Stay on Top), ringtone selector, and save button.
+
+minimized.png <p align="center"> <img alt="Taskley minimized widget screenshot" src="https://github.com/ArlinsonJ/Taskley/blob/e67439cc60936ea0b19fdbf790d047eb911eace5/Images/minimized.png"> </p> Description: Squircle minimized widget displayed after minimizing the app, showing the compact logo and drag behavior.
 
 <h2 align="center">📝 About</h2>
 
