@@ -96,7 +96,7 @@
 
 <h2 align="center">How to run</h2>
 
-<p align="center">For Windows: double-click or run <code>run.bat</code>. The script creates and activates a virtual environment if needed, installs dependencies, and launches Taskley without leaving a console window open for the GUI. For Linux and macOS: make <code>run.sh</code> executable (<code>chmod +x run.sh</code>) and run it from the project folder; it will create or reuse a virtual environment, install dependencies if necessary, and start Taskley. If Python is not installed, follow the prompt the script provides to install Python 3.10+ before re-running.</p>
+<p align="center">For Windows: double‑click or run <code>run.bat</code>. The script creates and activates a virtual environment if needed, installs dependencies, and launches Taskley without leaving a console window open for the GUI. For Linux and macOS: make <code>run.sh</code> executable (<code>chmod +x run.sh</code>) and run it from the project folder; it will create or reuse a virtual environment, install dependencies if necessary, and start Taskley. If Python is not installed the scripts will print an instruction and exit — they will not download or install Python for you.</p>
 
 <h2 align="center">Configuration</h2>
 
