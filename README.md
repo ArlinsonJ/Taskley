@@ -1,4 +1,4 @@
-<p align="center"> <img width="200" alt="Taskley Logo" src="https://github.com/ArlinsonJ/Taskley/blob/febf1b5192164ec6fb8058e119ca5dc3a5fd16c7/Images/taskley-logo.png"> </p>
+<p align="center"> <img width="200" alt="Taskley Logo" src="https://github.com/ArlinsonJ/Taskley/blob/63871331f0b31d50eaf2876d4200726179c5f537/Images/taskley-logo.png"> </p>
 
 <h1 align="center">😊 <strong>Taskley</strong> — A Lightweight Desktop Task Manager with Reminders</h1>
 
