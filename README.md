@@ -4,12 +4,12 @@
 
 <h1 align="center"><strong>Taskley</strong> — A Lightweight Desktop Task Manager with Reminders</h1>
 
-
-<div align="center" style="margin-top:64px;"></div>
+<!-- Extra space between header and screenshots -->
+<div align="center" style="margin-top:48px;"></div>
 
 <h2 align="center">Screenshots</h2>
 
-<div align="center" style="margin-bottom:64px;">
+<div align="center" style="margin-bottom:36px;">
   <p align="center"><strong>Light Mode</strong></p>
   <p align="center">
     <img alt="Taskley light mode screenshot" src="https://github.com/ArlinsonJ/Taskley/blob/e67439cc60936ea0b19fdbf790d047eb911eace5/Images/light-mode.png">
@@ -64,6 +64,7 @@
   </p>
   <p align="center">Squircle minimized widget displayed after minimizing the app, showing the compact logo and drag behavior</p>
 </div>
+
 
 <h2 align="center">📝 About</h2>
 
