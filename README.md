@@ -18,7 +18,7 @@
   <p align="center">Main app window in the light theme showing the logo, task list, filters, and primary actions</p>
 </div>
 
-<br>
+<br><br>
 
 <div align="center">
   <p align="center"><strong>Dark Mode</strong></p>
