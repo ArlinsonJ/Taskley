@@ -9,9 +9,7 @@
 <h2 align="center">Screenshots</h2>
 
 <div align="center">
-  <br>
   <p align="center"><strong>Light Mode</strong></p>
-  <br>
   <p align="center">
     <img alt="Taskley light mode screenshot" src="https://github.com/ArlinsonJ/Taskley/blob/e67439cc60936ea0b19fdbf790d047eb911eace5/Images/light-mode.png">
   </p>
@@ -21,9 +19,7 @@
 <br><br>
 
 <div align="center">
-  <br>
   <p align="center"><strong>Dark Mode</strong></p>
-  <br>
   <p align="center">
     <img alt="Taskley dark mode screenshot" src="https://github.com/ArlinsonJ/Taskley/blob/e67439cc60936ea0b19fdbf790d047eb911eace5/Images/dark-mode.png">
   </p>
@@ -33,9 +29,7 @@
 <br><br>
 
 <div align="center">
-  <br>
   <p align="center"><strong>Add Task</strong></p>
-  <br>
   <p align="center">
     <img alt="Taskley add task screenshot" src="https://github.com/ArlinsonJ/Taskley/blob/e67439cc60936ea0b19fdbf790d047eb911eace5/Images/add-task.png.png">
   </p>
@@ -45,9 +39,7 @@
 <br><br>
 
 <div align="center">
-  <br>
   <p align="center"><strong>Task Details</strong></p>
-  <br>
   <p align="center">
     <img alt="Taskley task details screenshot" src="https://github.com/ArlinsonJ/Taskley/blob/78da200f799ed922944aad9637710c938e9b4e22/Images/task-details.png">
   </p>
@@ -57,9 +49,7 @@
 <br><br>
 
 <div align="center">
-  <br>
   <p align="center"><strong>Edit Task</strong></p>
-  <br>
   <p align="center">
     <img alt="Taskley edit task screenshot" src="https://github.com/ArlinsonJ/Taskley/blob/e67439cc60936ea0b19fdbf790d047eb911eace5/Images/edit-task.png">
   </p>
@@ -69,9 +59,7 @@
 <br><br>
 
 <div align="center">
-  <br>
   <p align="center"><strong>Settings</strong></p>
-  <br>
   <p align="center">
     <img alt="Taskley settings screenshot" src="https://github.com/ArlinsonJ/Taskley/blob/e67439cc60936ea0b19fdbf790d047eb911eace5/Images/settings.png">
   </p>
@@ -81,9 +69,7 @@
 <br><br>
 
 <div align="center">
-  <br>
   <p align="center"><strong>Minimized</strong></p>
-  <br>
   <p align="center">
     <img alt="Taskley minimized widget screenshot" src="https://github.com/ArlinsonJ/Taskley/blob/e67439cc60936ea0b19fdbf790d047eb911eace5/Images/minimized.png">
   </p>
