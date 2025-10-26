@@ -2,7 +2,9 @@
 
 <h1 align="center"> <strong>Taskley</strong> — A Lightweight Desktop Task Manager with Reminders</h1>
 
-Screenshots
+
+<h2 align="center">Screenshots</h2>
+
 <p align="center">Light Mode</p> <p align="center"> <img alt="Taskley light mode screenshot" src="https://github.com/ArlinsonJ/Taskley/blob/e67439cc60936ea0b19fdbf790d047eb911eace5/Images/light-mode.png"> </p> <p align="center">Main app window in the light theme showing the logo, clock, task list, filters, and primary actions.</p>
 
 <p align="center">Dark Mode</p> <p align="center"> <img alt="Taskley dark mode screenshot" src="https://github.com/ArlinsonJ/Taskley/blob/e67439cc60936ea0b19fdbf790d047eb911eace5/Images/dark-mode.png"> </p> <p align="center">Same main view using the dark theme to show colors, contrast, and style parity. Dark Mode displays times in military format by default.</p>
