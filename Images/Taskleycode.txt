@@ -1,0 +1,987 @@
+# Copyright (c) 2025 ArlinsonJ
+# Licensed under the MIT License
+# See LICENSE-MIT.txt for details
+
+#!/usr/bin/env python
+
+import sys
+import sqlite3
+import os
+import logging
+from datetime import datetime, timedelta
+
+from PySide6.QtWidgets import (
+    QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel,
+    QListWidget, QLineEdit, QTextEdit, QDateTimeEdit, QComboBox, QCheckBox,
+    QStackedWidget, QDialog, QFileDialog, QInputDialog, QSpinBox
+)
+from PySide6.QtCore import Qt, QTimer, QDateTime, QSettings, QEvent, Signal
+from PySide6.QtGui import QRegion, QPainterPath 
+import pygame
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    handlers=[logging.FileHandler("taskley.log"), logging.StreamHandler()]
+)
+pygame.mixer.init()
+DEFAULT_RINGTONE = None
+
+# --------------------------------------------------------------------------
+# ClickableLabel - a QLabel subclass that emits a signal when clicked.
+# --------------------------------------------------------------------------
+class ClickableLabel(QLabel):
+    clicked = Signal() 
+
+    def mousePressEvent(self, event):
+        self.clicked.emit()
+        super().mousePressEvent(event)
+
+# --------------------------------------------------------------------------
+# Database Handler (SQLite)
+# --------------------------------------------------------------------------
+class TaskleyDB:
+    def __init__(self):
+        self.conn = sqlite3.connect("taskley.db")
+        self.create_table()
+
+    def create_table(self):
+        self.conn.execute('''CREATE TABLE IF NOT EXISTS tasks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT,
+            notes TEXT,
+            due DATETIME,
+            category TEXT,
+            recurring TEXT,
+            completed INTEGER DEFAULT 0
+        )''')
+        self.conn.commit()
+
+    def add_task(self, title, notes, due, category, recurring):
+        if not category:
+            category = "assignment"
+        self.conn.execute(
+            "INSERT INTO tasks (title, notes, due, category, recurring) VALUES (?, ?, ?, ?, ?)",
+            (title, notes, due, category, recurring)
+        )
+        self.conn.commit()
+
+    def get_tasks(self):
+        return self.conn.execute("SELECT * FROM tasks ORDER BY due ASC").fetchall()
+
+    def mark_complete(self, task_id):
+        self.conn.execute("UPDATE tasks SET completed = 1 WHERE id = ?", (task_id,))
+        self.conn.commit()
+
+    def mark_incomplete(self, task_id):
+        self.conn.execute("UPDATE tasks SET completed = 0 WHERE id = ?", (task_id,))
+        self.conn.commit()
+
+    def delete_task(self, task_id):
+        self.conn.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
+        self.conn.commit()
+
+    def update_task(self, task_id, title, notes, due, category, recurring):
+        self.conn.execute(
+            "UPDATE tasks SET title=?, notes=?, due=?, category=?, recurring=? WHERE id=?",
+            (title, notes, due, category, recurring, task_id)
+        )
+        self.conn.commit()
+
+# --------------------------------------------------------------------------
+# Minimized Window with a Squircle Appearance
+# --------------------------------------------------------------------------
+class MinimizedWindow(QWidget):
+    def __init__(self, main_window, dark_mode, always_on_top=False):
+        super().__init__()
+        self.main_window = main_window
+        flags = Qt.FramelessWindowHint
+        if always_on_top:
+            flags |= Qt.WindowStaysOnTopHint
+        self.setWindowFlags(flags)
+        self.setFixedSize(100, 100)
+        
+        path = QPainterPath()
+        path.moveTo(0, 30)
+        path.cubicTo(0, 0, 0, 0, 30, 0)
+        path.lineTo(70, 0)
+        path.cubicTo(100, 0, 100, 0, 100, 30)
+        path.lineTo(100, 70)
+        path.cubicTo(100, 100, 100, 100, 70, 100)
+        path.lineTo(30, 100)
+        path.cubicTo(0, 100, 0, 100, 0, 70)
+        path.closeSubpath()
+        self.setMask(QRegion(path.toFillPolygon().toPolygon()))
+        if dark_mode:
+            self.setStyleSheet("background-color: #2e2e2e;")
+        else:
+            self.setStyleSheet("background-color: #fff8dc;")
+        layout = QVBoxLayout(self)
+        self.logo_label = QLabel("😊")
+        self.logo_label.setAlignment(Qt.AlignCenter)
+        if dark_mode:
+            self.logo_label.setStyleSheet("font-size: 32px; color: white;")
+        else:
+            self.logo_label.setStyleSheet("font-size: 32px; color: black;")
+        layout.addWidget(self.logo_label)
+        self._mouse_down_pos = None
+        self._mouse_down_global_pos = None
+
+    def mouseDoubleClickEvent(self, event):
+        self.main_window.restore_from_minimized()
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self._mouse_down_pos = (event.position().toPoint() if hasattr(event, "position") else event.pos())
+            self._mouse_down_global_pos = (event.globalPosition().toPoint() if hasattr(event, "globalPosition") else event.globalPos())
+
+    def mouseMoveEvent(self, event):
+        if self._mouse_down_global_pos is not None:
+            new_pos = (event.globalPosition().toPoint() if hasattr(event, "globalPosition") else event.globalPos())
+            diff = new_pos - self._mouse_down_global_pos
+            self.move(self.pos() + diff)
+            self._mouse_down_global_pos = new_pos
+
+# --------------------------------------------------------------------------
+# Main Application Window
+# --------------------------------------------------------------------------
+class Taskley(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.db = TaskleyDB()
+        self.settings = QSettings("MyCompany", "Taskley")
+        self.load_settings_from_config()
+        
+        self.startup_time = datetime.now()
+        self.triggered_tasks = set() 
+        self.emoji_click_count = 0  
+
+        self.setWindowTitle("Taskley")
+        self.setGeometry(200, 200, 520, 700)
+        
+        self.default_width, self.default_height = 520, 700
+        self.settings_width, self.settings_height = 400, 300
+
+        self.filter_mode = "all"
+        self.category_filter = "All"
+
+        self.stack = QStackedWidget(self)
+        self.main_page = self.create_main_page()
+        self.add_edit_page = self.create_add_edit_page()
+        self.details_page = self.create_details_page()
+        self.settings_page = self.create_settings_page()
+        self.stack.addWidget(self.main_page)
+        self.stack.addWidget(self.add_edit_page)
+        self.stack.addWidget(self.details_page)
+        self.stack.addWidget(self.settings_page)
+
+        main_layout = QVBoxLayout(self)
+        main_layout.addWidget(self.stack)
+        self.setLayout(main_layout)
+
+        self.reminder_timer = QTimer(self)
+        self.reminder_timer.timeout.connect(self.check_reminders)
+        self.reminder_timer.start(1000)
+        self.clock_timer = QTimer(self)
+        self.clock_timer.timeout.connect(self.update_clock)
+        self.clock_timer.start(1000)
+
+        self.load_tasks()
+        self.current_task_id = None
+        self.minimized_widget = None
+
+    # -------------------- Settings Persistence -------------------------
+    def load_settings_from_config(self):
+        self.dark_mode = self.settings.value("DARK_MODE", False, type=bool)
+        self.military_time = self.settings.value("MILITARY_TIME", True, type=bool)
+        self.always_on_top = self.settings.value("ALWAYS_ON_TOP", True, type=bool)
+        self.ringtone = self.settings.value("RINGTONE", DEFAULT_RINGTONE, type=str)
+
+    # -------------------- Helper to Parse Due Date Strings ----------------
+    def parse_due_date(self, due_str):
+        due_str = due_str.strip()
+        if "AM" in due_str.upper() or "PM" in due_str.upper():
+            formats = ["%Y-%m-%d %I:%M:%S %p", "%Y-%m-%d %I:%M %p"]
+        else:
+            formats = ["%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M"]
+        for fmt in formats:
+            try:
+                return datetime.strptime(due_str, fmt)
+            except ValueError:
+                continue
+        raise ValueError(f"Time data '{due_str}' does not match expected formats.")
+
+    # -------------------- Dynamic Style Update ------------------------------
+    def update_styles(self):
+        if self.dark_mode:
+            global_style = """
+                QWidget { background-color: #2e2e2e; color: white; }
+                QPushButton { background-color: #444; color: white; border-radius: 6px; padding: 6px; }
+            """
+            add_edit_style = """
+                QLineEdit, QTextEdit, QDateTimeEdit, QComboBox {
+                    background-color: #3e3e3e;
+                    border-radius: 6px;
+                    padding: 6px;
+                    font-size: 14px;
+                    border: 1px solid #555;
+                    color: white;
+                }
+            """
+            if self.task_list:
+                self.task_list.setStyleSheet("background-color: #3a3a3a;")
+            logo_color = "white"
+        else:
+            global_style = """
+                QWidget { background-color: #fff8dc; color: black; }
+                QPushButton { background-color: #f5deb3; border-radius: 6px; padding: 6px; }
+            """
+            add_edit_style = """
+                QLineEdit, QTextEdit, QDateTimeEdit, QComboBox {
+                    background-color: #fffdf0;
+                    border-radius: 6px;
+                    padding: 6px;
+                    font-size: 14px;
+                    border: 1px solid #ccc;
+                    color: black;
+                }
+            """
+            if self.task_list:
+                self.task_list.setStyleSheet("background-color: #fffdf0; border: 1px solid #ccc; border-radius: 6px;")
+            logo_color = "black"
+        self.setStyleSheet(global_style)
+        self.main_page.setStyleSheet(global_style)
+        self.settings_page.setStyleSheet(global_style)
+        self.details_page.setStyleSheet(global_style)
+        self.add_edit_page.setStyleSheet(add_edit_style)
+        self.logo_label.setStyleSheet(f"font-size: 50px; color: {logo_color};")
+        self.settings_btn.setStyleSheet(f"font-size: 24px; color: {logo_color};")
+        
+        if hasattr(self, 'ringtone_text'):
+            if self.dark_mode:
+                self.ringtone_text.setStyleSheet(
+                    "background-color: #3e3e3e; border: 1px solid #555; color: white; border-radius: 6px; padding: 4px;")
+            else:
+                self.ringtone_text.setStyleSheet(
+                    "background-color: #fffdf0; border: 1px solid #ccc; color: black; border-radius: 6px; padding: 4px;")
+        
+        if hasattr(self, 'details_notes'):
+            if self.dark_mode:
+                self.details_notes.setStyleSheet(
+                    "background-color: #3a3a3a; border: 1px solid #555; border-radius: 6px; padding: 6px; color: white;")
+            else:
+                self.details_notes.setStyleSheet(
+                    "background-color: #fffdf0; border: 1px solid #ccc; border-radius: 6px; padding: 6px; color: black;")
+        if self.minimized_widget:
+            current_flags = self.minimized_widget.windowFlags()
+            if self.always_on_top:
+                self.minimized_widget.setWindowFlags(current_flags | Qt.WindowStaysOnTopHint)
+            else:
+                self.minimized_widget.setWindowFlags(current_flags & ~Qt.WindowStaysOnTopHint)
+            self.minimized_widget.show()
+        self.show()
+
+    # ----------------------- Create Pages ------------------------------
+    def create_main_page(self):
+        page = QWidget()
+        layout = QVBoxLayout(page)
+        header_layout = QHBoxLayout()
+        
+        self.logo_label = ClickableLabel("😊")
+        self.logo_label.setAlignment(Qt.AlignCenter)
+        self.logo_label.clicked.connect(self.handle_emoji_clicked)
+        if self.dark_mode:
+            self.logo_label.setStyleSheet("font-size: 50px; color: white;")
+        else:
+            self.logo_label.setStyleSheet("font-size: 50px; color: black;")
+        header_layout.addWidget(self.logo_label)
+        
+        title_clock_layout = QVBoxLayout()
+        title_label = QLabel("Taskley")
+        title_label.setStyleSheet("font-size: 24px; font-weight: bold;")
+        self.clock_label = QLabel("")
+        self.clock_label.setStyleSheet("font-size: 16px;")
+        title_clock_layout.addWidget(title_label)
+        title_clock_layout.addWidget(self.clock_label)
+        header_layout.addLayout(title_clock_layout)
+        header_layout.addStretch()
+        self.settings_btn = QPushButton("⚙️")
+        self.settings_btn.setFixedSize(64, 64)
+        if self.dark_mode:
+            self.settings_btn.setStyleSheet("font-size: 24px; color: white;")
+        else:
+            self.settings_btn.setStyleSheet("font-size: 24px; color: black;")
+        self.settings_btn.clicked.connect(self.show_settings_page)
+        header_layout.addWidget(self.settings_btn)
+        layout.addLayout(header_layout)
+        status_filter_layout = QHBoxLayout()
+        status_filter_label = QLabel("Status Filter:")
+        self.filter_combo = QComboBox()
+        self.filter_combo.addItems(["all", "completed", "incomplete"])
+        self.filter_combo.setCurrentText(self.filter_mode)
+        self.filter_combo.currentTextChanged.connect(self.update_status_filter)
+        status_filter_layout.addWidget(status_filter_label)
+        status_filter_layout.addWidget(self.filter_combo)
+        status_filter_layout.addStretch()
+        layout.addLayout(status_filter_layout)
+        fixed_defaults = ["General", "Assignment", "Meeting", "Reminder"]
+        self.category_filter_combo = QComboBox()
+        items = ["All"] + fixed_defaults
+        tasks = self.db.get_tasks()
+        for task in tasks:
+            cat = task[4].strip()
+            if cat and cat.title() not in fixed_defaults and cat.title() not in items:
+                items.append(cat.title())
+        self.category_filter_combo.addItems(items)
+        self.category_filter_combo.currentTextChanged.connect(self.update_category_filter)
+        category_filter_layout = QHBoxLayout()
+        category_filter_label = QLabel("Category Filter:")
+        category_filter_layout.addWidget(category_filter_label)
+        category_filter_layout.addWidget(self.category_filter_combo)
+        category_filter_layout.addStretch()
+        layout.addLayout(category_filter_layout)
+        self.task_list = QListWidget()
+        self.task_list.itemDoubleClicked.connect(self.open_task_details)
+        self.task_list.currentRowChanged.connect(self.update_complete_button)
+        layout.addWidget(self.task_list)
+        btn_layout = QHBoxLayout()
+        btn_layout.setSpacing(20)
+        self.add_page_btn = QPushButton("Add Task")
+        self.add_page_btn.clicked.connect(self.show_add_edit_page)
+        self.complete_btn = QPushButton("Mark Complete")
+        self.complete_btn.clicked.connect(self.toggle_selected_complete)
+        self.edit_btn = QPushButton("Edit Task")
+        self.edit_btn.clicked.connect(self.edit_selected_task)
+        self.delete_btn = QPushButton("Delete Task")
+        self.delete_btn.clicked.connect(self.delete_selected_task)
+        btn_layout.addWidget(self.add_page_btn)
+        btn_layout.addWidget(self.complete_btn)
+        btn_layout.addWidget(self.edit_btn)
+        btn_layout.addWidget(self.delete_btn)
+        layout.addLayout(btn_layout)
+        return page
+
+    def create_add_edit_page(self):
+        page = QWidget()
+        layout = QVBoxLayout(page)
+        self.add_edit_label = QLabel("Add Task")
+        self.add_edit_label.setStyleSheet("font-size: 18px; font-weight: bold;")
+        layout.addWidget(self.add_edit_label)
+        self.title_input = QLineEdit()
+        self.title_input.setPlaceholderText("Task Title")
+        self.notes_input = QTextEdit()
+        self.notes_input.setPlaceholderText("Notes...")
+        self.recurring_checkbox = QCheckBox("Recurring Task")
+        self.due_date = None
+        self.set_due_btn = QPushButton("Set Due Date")
+        self.set_timer_btn = QPushButton("Set Timer")
+        self.clear_due_btn = QPushButton("No Due Date")
+        
+        self.clear_due_btn.clicked.connect(self.clear_due_date)
+        self.set_due_btn.clicked.connect(self.set_due_date)
+        self.set_timer_btn.clicked.connect(self.set_timer)
+        due_buttons_layout = QHBoxLayout()
+        due_buttons_layout.setSpacing(20)
+        due_buttons_layout.addWidget(self.set_due_btn)
+        due_buttons_layout.addWidget(self.set_timer_btn)
+        due_buttons_layout.addWidget(self.clear_due_btn)
+        self.due_label = QLabel("Due Date: Not set")
+        due_recurring_layout = QHBoxLayout()
+        due_recurring_layout.setSpacing(20)
+        due_recurring_layout.addWidget(self.due_label)
+        due_recurring_layout.addStretch()
+        due_recurring_layout.addWidget(self.recurring_checkbox)
+        self.category_input = QComboBox()
+        self.category_input.addItems(["General", "Assignment", "Meeting", "Reminder", "Custom"])
+        self.category_input.currentTextChanged.connect(self.handle_category_change)
+        self.custom_category_input = QLineEdit()
+        self.custom_category_input.setPlaceholderText("Enter custom category")
+        self.custom_category_input.setVisible(False)
+        layout.addWidget(self.title_input)
+        layout.addWidget(self.notes_input)
+        layout.addLayout(due_buttons_layout)
+        layout.addLayout(due_recurring_layout)
+        layout.addWidget(self.category_input)
+        layout.addWidget(self.custom_category_input)
+        btn_layout = QHBoxLayout()
+        btn_layout.setSpacing(20)
+        back_btn = QPushButton("Back")
+        back_btn.clicked.connect(self.show_main_page)
+        save_btn = QPushButton("Save")
+        save_btn.clicked.connect(self.add_or_edit_task)
+        btn_layout.addWidget(back_btn)
+        btn_layout.addWidget(save_btn)
+        layout.addLayout(btn_layout)
+        if self.dark_mode:
+            page.setStyleSheet("""
+                QLineEdit, QTextEdit, QDateTimeEdit, QComboBox {
+                    background-color: #3e3e3e;
+                    border-radius: 6px;
+                    padding: 6px;
+                    font-size: 14px;
+                    border: 1px solid #555;
+                    color: white;
+                }
+            """)
+        else:
+            page.setStyleSheet("""
+                QLineEdit, QTextEdit, QDateTimeEdit, QComboBox {
+                    background-color: #fffdf0;
+                    border-radius: 6px;
+                    padding: 6px;
+                    font-size: 14px;
+                    border: 1px solid #ccc;
+                    color: black;
+                }
+            """)
+        return page
+
+    def clear_due_date(self):
+        
+        self.due_date = ""
+        self.due_label.setText("Due Date: Not set")
+
+    def create_details_page(self):
+        page = QWidget()
+        layout = QVBoxLayout(page)
+        self.details_title = QLabel("Task Title")
+        self.details_title.setStyleSheet("font-size: 20px; font-weight: bold;")
+        
+        self.details_notes = QTextEdit()
+        self.details_notes.setReadOnly(True)
+        self.details_notes.setStyleSheet("background-color: #fffdf0; border: 1px solid #ccc; border-radius: 6px; padding: 6px; color: black;")
+        self.details_due = QLabel("Due:")
+        self.details_category = QLabel("Category:")
+        self.details_recurring = QLabel("Recurring:")
+        layout.addWidget(self.details_title)
+        layout.addWidget(QLabel("Notes:"))
+        layout.addWidget(self.details_notes)
+        layout.addWidget(self.details_due)
+        layout.addWidget(self.details_category)
+        layout.addWidget(self.details_recurring)
+        btn_layout = QHBoxLayout()
+        btn_layout.setSpacing(20)
+        details_back = QPushButton("Back")
+        details_back.clicked.connect(self.show_main_page)
+        details_edit = QPushButton("Edit")
+        details_edit.clicked.connect(self.edit_from_details)
+        details_delete = QPushButton("Delete")
+        details_delete.clicked.connect(self.delete_from_details)
+        btn_layout.addWidget(details_back)
+        btn_layout.addWidget(details_edit)
+        btn_layout.addWidget(details_delete)
+        layout.addLayout(btn_layout)
+        return page
+
+    def create_settings_page(self):
+        page = QWidget()
+        layout = QVBoxLayout(page)
+        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(15)
+        header_layout = QHBoxLayout()
+        logo = QLabel("😊")
+        logo.setStyleSheet("font-size: 30px;")
+        logo.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        header = QLabel("Settings")
+        header.setStyleSheet("font-size: 24px; font-weight: bold;")
+        header_layout.addWidget(logo)
+        header_layout.addWidget(header)
+        header_layout.addStretch()
+        layout.addLayout(header_layout)
+        toggles_layout = QHBoxLayout()
+        toggles_layout.setSpacing(20)
+        self.dark_mode_cb = QCheckBox("Dark Mode")
+        self.dark_mode_cb.setChecked(self.dark_mode)
+        self.military_time_cb = QCheckBox("Military Time")
+        self.military_time_cb.setChecked(self.military_time)
+        self.always_on_top_cb = QCheckBox("Stay on Top")
+        self.always_on_top_cb.setChecked(self.always_on_top)
+        toggles_layout.addWidget(self.dark_mode_cb)
+        toggles_layout.addWidget(self.military_time_cb)
+        toggles_layout.addWidget(self.always_on_top_cb)
+        toggles_layout.addStretch()
+        layout.addLayout(toggles_layout)
+        ringtone_layout = QVBoxLayout()
+        ringtone_layout.setSpacing(10)
+        ringtone_label = QLabel("Ringtone:")
+        self.ringtone_text = QLineEdit()
+        self.ringtone_text.setReadOnly(True)
+        if self.ringtone:
+            self.ringtone_text.setText(self.ringtone)
+        else:
+            self.ringtone_text.setPlaceholderText("No ringtone selected")
+        if self.dark_mode:
+            self.ringtone_text.setStyleSheet("background-color: #3e3e3e; border: 1px solid #555; color: white; border-radius: 6px; padding: 4px;")
+        else:
+            self.ringtone_text.setStyleSheet("background-color: #fffdf0; border: 1px solid #ccc; color: black; border-radius: 6px; padding: 4px;")
+        self.ringtone_btn = QPushButton("Choose Ringtone")
+        self.ringtone_btn.clicked.connect(self.set_ringtone)
+        self.clear_ringtone_btn = QPushButton("Clear Ringtone")
+        self.clear_ringtone_btn.clicked.connect(self.clear_ringtone)
+        buttons_h = QHBoxLayout()
+        buttons_h.addWidget(self.ringtone_btn)
+        buttons_h.addWidget(self.clear_ringtone_btn)
+        ringtone_layout.addWidget(ringtone_label)
+        ringtone_layout.addWidget(self.ringtone_text)
+        ringtone_layout.addLayout(buttons_h)
+        layout.addLayout(ringtone_layout)
+        btn_layout = QHBoxLayout()
+        btn_layout.setSpacing(20)
+        settings_back = QPushButton("Back")
+        settings_back.clicked.connect(self.show_main_page)
+        settings_save = QPushButton("Save Settings")
+        settings_save.clicked.connect(self.save_settings)
+        btn_layout.addWidget(settings_back)
+        btn_layout.addWidget(settings_save)
+        layout.addLayout(btn_layout)
+        layout.addStretch()
+        return page
+
+    # --------------------- Due Date Helper Methods ---------------------
+    def set_due_date(self):
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Select Due Date")
+        layout = QVBoxLayout(dialog)
+        date_edit = QDateTimeEdit(QDateTime.currentDateTime())
+        if self.military_time:
+            date_edit.setDisplayFormat("yyyy-MM-dd HH:mm")
+        else:
+            date_edit.setDisplayFormat("yyyy-MM-dd hh:mm AP")
+        date_edit.setCalendarPopup(True)
+        layout.addWidget(date_edit)
+        btn_layout = QHBoxLayout()
+        ok_btn = QPushButton("OK")
+        cancel_btn = QPushButton("Cancel")
+        btn_layout.addWidget(ok_btn)
+        btn_layout.addWidget(cancel_btn)
+        layout.addLayout(btn_layout)
+        ok_btn.clicked.connect(lambda: self.confirm_due_date(date_edit.dateTime(), dialog))
+        cancel_btn.clicked.connect(dialog.reject)
+        dialog.exec()
+
+    def confirm_due_date(self, dt, dialog):
+        fmt = "yyyy-MM-dd HH:mm" if self.military_time else "yyyy-MM-dd hh:mm AP"
+        self.due_date = dt.toString(fmt)
+        self.due_label.setText("Due Date: " + self.due_date)
+        dialog.accept()
+
+    def set_timer(self):
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Set Timer")
+        layout = QVBoxLayout(dialog)
+        hours_layout = QHBoxLayout()
+        hours_label = QLabel("Hours:")
+        hours_spin = QSpinBox()
+        hours_spin.setRange(0, 99)
+        hours_layout.addWidget(hours_label)
+        hours_layout.addWidget(hours_spin)
+        minutes_layout = QHBoxLayout()
+        minutes_label = QLabel("Minutes:")
+        minutes_spin = QSpinBox()
+        minutes_spin.setRange(0, 59)
+        minutes_layout.addWidget(minutes_label)
+        minutes_layout.addWidget(minutes_spin)
+        seconds_layout = QHBoxLayout()
+        seconds_label = QLabel("Seconds:")
+        seconds_spin = QSpinBox()
+        seconds_spin.setRange(0, 59)
+        seconds_layout.addWidget(seconds_label)
+        seconds_layout.addWidget(seconds_spin)
+        layout.addLayout(hours_layout)
+        layout.addLayout(minutes_layout)
+        layout.addLayout(seconds_layout)
+        btn_layout = QHBoxLayout()
+        ok_btn = QPushButton("OK")
+        cancel_btn = QPushButton("Cancel")
+        btn_layout.addWidget(ok_btn)
+        btn_layout.addWidget(cancel_btn)
+        layout.addLayout(btn_layout)
+        def confirm_timer():
+            hrs = hours_spin.value()
+            mins = minutes_spin.value()
+            secs = seconds_spin.value()
+            total_secs = hrs * 3600 + mins * 60 + secs
+            new_dt = QDateTime.currentDateTime().addSecs(total_secs)
+            fmt = "yyyy-MM-dd HH:mm:ss" if self.military_time else "yyyy-MM-dd hh:mm:ss AP"
+            self.due_date = new_dt.toString(fmt)
+            self.due_label.setText("Timer Set: Ends at " + self.due_date)
+            dialog.accept()
+        ok_btn.clicked.connect(confirm_timer)
+        cancel_btn.clicked.connect(dialog.reject)
+        dialog.exec()
+
+    # ---------------------- Navigation Methods -------------------------
+    def show_main_page(self):
+        self.stack.setCurrentWidget(self.main_page)
+        self.resize(self.default_width, self.default_height)
+        self.load_tasks()
+
+    def show_add_edit_page(self):
+        self.current_task_id = None
+        self.add_edit_label.setText("Add Task")
+        self.title_input.clear()
+        self.notes_input.clear()
+        self.due_date = None
+        self.due_label.setText("Due Date: Not set")
+        self.stack.setCurrentWidget(self.add_edit_page)
+
+    def show_settings_page(self):
+        self.resize(self.settings_width, self.settings_height)
+        self.dark_mode_cb.setChecked(self.dark_mode)
+        self.military_time_cb.setChecked(self.military_time)
+        self.always_on_top_cb.setChecked(self.always_on_top)
+        self.ringtone_text.setText(self.ringtone if self.ringtone else "")
+        self.stack.setCurrentWidget(self.settings_page)
+
+    def show_details_page(self):
+        self.stack.setCurrentWidget(self.details_page)
+
+    # ------------------ Settings Callbacks --------------------------
+    def save_settings(self):
+        self.dark_mode = self.dark_mode_cb.isChecked()
+        self.military_time = self.military_time_cb.isChecked()
+        self.always_on_top = self.always_on_top_cb.isChecked()
+        self.settings.setValue("DARK_MODE", self.dark_mode)
+        self.settings.setValue("MILITARY_TIME", self.military_time)
+        self.settings.setValue("ALWAYS_ON_TOP", self.always_on_top)
+        self.settings.setValue("RINGTONE", self.ringtone if self.ringtone else "")
+        self.apply_settings()
+        self.show_main_page()
+
+    def set_ringtone(self):
+        file, _ = QFileDialog.getOpenFileName(self, "Select MP3", "", "MP3 Files (*.mp3)")
+        if file:
+            self.ringtone = file
+            self.settings.setValue("RINGTONE", self.ringtone)
+            self.ringtone_text.setText(file)
+
+    def clear_ringtone(self):
+        self.ringtone = ""
+        self.settings.setValue("RINGTONE", "")
+        self.ringtone_text.setText("")
+        pygame.mixer.music.stop()
+
+    # ---------------------- Task Callbacks ---------------------------
+    def add_or_edit_task(self):
+        title = self.title_input.text()
+        notes = self.notes_input.toPlainText()
+        due = self.due_date if self.due_date is not None else ""
+        category = self.category_input.currentText() if hasattr(self, 'category_input') else ""
+        if category == "Custom":
+            custom_text = self.custom_category_input.text() if hasattr(self, 'custom_category_input') else ""
+            category = custom_text if custom_text.strip() != "" else "Custom"
+        if not category:
+            category = "assignment"
+        recurring = "Yes" if (hasattr(self, 'recurring_checkbox') and self.recurring_checkbox.isChecked()) else "No"
+        if title.strip():
+            if self.current_task_id is None:
+                self.db.add_task(title, notes, due, category, recurring)
+            else:
+                self.db.update_task(self.current_task_id, title, notes, due, category, recurring)
+            self.load_tasks()
+            self.show_main_page()
+
+    def edit_selected_task(self):
+        selected = self.task_list.currentRow()
+        tasks = self.db.get_tasks()
+        if selected >= 0 and selected < len(tasks):
+            task = tasks[selected]
+            self.current_task_id = task[0]
+            self.title_input.setText(task[1])
+            self.notes_input.setText(task[2])
+            if task[3] and task[3].strip():
+                self.due_date = task[3]
+                self.due_label.setText("Due Date: " + task[3])
+            else:
+                self.due_date = None
+                self.due_label.setText("Due Date: Not set")
+            if hasattr(self, 'category_input'):
+                index = self.category_input.findText(task[4])
+                if index < 0:
+                    index = self.category_input.findText("Custom")
+                    self.custom_category_input.setText(task[4])
+                    self.custom_category_input.setVisible(True)
+                else:
+                    self.custom_category_input.clear()
+                    self.custom_category_input.setVisible(False)
+                self.category_input.setCurrentIndex(index)
+            if hasattr(self, 'recurring_checkbox'):
+                self.recurring_checkbox.setChecked(task[5] == "Yes")
+            self.add_edit_label.setText("Edit Task")
+            self.stack.setCurrentWidget(self.add_edit_page)
+
+    def open_task_details(self, item):
+        selected = self.task_list.currentRow()
+        tasks = self.db.get_tasks()
+        if selected >= 0 and selected < len(tasks):
+            task = tasks[selected]
+            self.current_task_id = task[0]
+            self.details_title.setText(f"Title: {task[1]}")
+            
+            self.details_notes.setText(task[2])
+            if task[3] and task[3].strip():
+                due_time = self.parse_due_date(task[3])
+                display_time = due_time.strftime("%H:%M") if self.military_time else due_time.strftime("%I:%M %p")
+                self.details_due.setText(f"Due: {due_time.date()} {display_time}")
+            else:
+                self.details_due.setText("Due: Not set")
+            self.details_category.setText(f"Category: {task[4]}")
+            self.details_recurring.setText(f"Recurring: {task[5]}")
+            self.show_details_page()
+
+    def edit_from_details(self):
+        tasks = self.db.get_tasks()
+        task = None
+        for t in tasks:
+            if t[0] == self.current_task_id:
+                task = t
+                break
+        if task:
+            self.title_input.setText(task[1])
+            self.notes_input.setText(task[2])
+            if task[3] and task[3].strip():
+                self.due_date = task[3]
+                self.due_label.setText("Due Date: " + task[3])
+            else:
+                self.due_date = None
+                self.due_label.setText("Due Date: Not set")
+            if hasattr(self, 'category_input'):
+                index = self.category_input.findText(task[4])
+                if index < 0:
+                    index = self.category_input.findText("Custom")
+                    self.custom_category_input.setText(task[4])
+                    self.custom_category_input.setVisible(True)
+                else:
+                    self.custom_category_input.clear()
+                    self.custom_category_input.setVisible(False)
+                self.category_input.setCurrentIndex(index)
+            if hasattr(self, 'recurring_checkbox'):
+                self.recurring_checkbox.setChecked(task[5] == "Yes")
+            self.add_edit_label.setText("Edit Task")
+            self.stack.setCurrentWidget(self.add_edit_page)
+
+    def delete_from_details(self):
+        self.db.delete_task(self.current_task_id)
+        self.load_tasks()
+        self.show_main_page()
+
+    def toggle_selected_complete(self):
+        selected = self.task_list.currentRow()
+        tasks = self.db.get_tasks()
+        if selected >= 0 and selected < len(tasks):
+            task = tasks[selected]
+            if task[6] == 0:
+                
+                self.db.mark_complete(task[0])
+                
+                if task[0] in self.triggered_tasks:
+                    self.triggered_tasks.remove(task[0])
+            else:
+                
+                self.db.mark_incomplete(task[0])
+                
+                self.triggered_tasks.add(task[0])
+            self.load_tasks()
+            self.update_complete_button()
+
+    def delete_selected_task(self):
+        selected = self.task_list.currentRow()
+        tasks = self.db.get_tasks()
+        if selected >= 0 and selected < len(tasks):
+            task = tasks[selected]
+            self.db.delete_task(task[0])
+            self.load_tasks()
+
+    def update_complete_button(self, row=None):
+        index = self.task_list.currentRow()
+        tasks = self.db.get_tasks()
+        if index >= 0 and index < len(tasks):
+            task = tasks[index]
+            if task[6] == 0:
+                self.complete_btn.setText("Mark Complete")
+            else:
+                self.complete_btn.setText("Mark Incomplete")
+        else:
+            self.complete_btn.setText("Mark Complete")
+
+    def load_tasks(self):
+        self.task_list.clear()
+        tasks = self.db.get_tasks()
+        if self.filter_mode == "all":
+            filtered_tasks = tasks
+        elif self.filter_mode == "completed":
+            filtered_tasks = [task for task in tasks if task[6] == 1]
+        elif self.filter_mode == "incomplete":
+            filtered_tasks = [task for task in tasks if task[6] == 0]
+        else:
+            filtered_tasks = tasks
+        if self.category_filter != "All":
+            filtered_tasks = [task for task in filtered_tasks if task[4].lower() == self.category_filter.lower()]
+        for task in filtered_tasks:
+            status = "✅" if task[6] == 1 else "❗"
+            if task[3] and task[3].strip():
+                due_time = self.parse_due_date(task[3])
+                display_time = due_time.strftime("%H:%M") if self.military_time else due_time.strftime("%I:%M %p")
+                item_text = f"{status} {task[1]} | {task[4]} | Due: {due_time.date()} {display_time}"
+            else:
+                item_text = f"{status} {task[1]} | {task[4]} | No Due Date"
+            self.task_list.addItem(item_text)
+        self.update_category_filter_combo()
+
+    def update_category_filter_combo(self):
+        tasks = self.db.get_tasks()
+        fixed_defaults = ["General", "Assignment", "Meeting", "Reminder"]
+        custom_cats = set()
+        for task in tasks:
+            cat = task[4].strip()
+            if cat and cat.title() not in fixed_defaults:
+                custom_cats.add(cat.title())
+        items = ["All"] + fixed_defaults + sorted(custom_cats)
+        current = self.category_filter_combo.currentText() if self.category_filter_combo.count() > 0 else "All"
+        self.category_filter_combo.blockSignals(True)
+        self.category_filter_combo.clear()
+        self.category_filter_combo.addItems(items)
+        if current in items:
+            self.category_filter_combo.setCurrentText(current)
+        else:
+            self.category_filter_combo.setCurrentText("All")
+        self.category_filter_combo.blockSignals(False)
+
+    def handle_category_change(self, text):
+        if text == "Custom":
+            self.custom_category_input.setVisible(True)
+        else:
+            self.custom_category_input.setVisible(False)
+
+    def update_status_filter(self, text):
+        self.filter_mode = text
+        self.load_tasks()
+
+    def update_category_filter(self, text):
+        self.category_filter = text
+        self.load_tasks()
+
+    # ---------------------- Reminders and Alarm -----------------------
+    def check_reminders(self):
+        now = datetime.now()
+        tasks = self.db.get_tasks()
+        for task in tasks:
+            if not task[3] or not task[3].strip():
+                continue
+            try:
+                task_due = self.parse_due_date(task[3])
+            except Exception as e:
+                logging.error(f"Error parsing due date: {e}")
+                continue
+            
+            if task[6] == 0 and task_due <= now and task_due > self.startup_time and task[0] not in self.triggered_tasks:
+                self.triggered_tasks.add(task[0])
+                self.show_reminder_dialog(task)
+
+    def show_reminder_dialog(self, task):
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Alarm")
+        dialog.setModal(True)
+        layout = QVBoxLayout(dialog)
+        reminder_label = QLabel(f"Reminder: {task[1]}\n{task[2]}")
+        layout.addWidget(reminder_label)
+        btn_layout = QHBoxLayout()
+        snooze_btn = QPushButton("Snooze 5 Minutes")
+        dismiss_btn = QPushButton("Dismiss")
+        btn_layout.addWidget(snooze_btn)
+        btn_layout.addWidget(dismiss_btn)
+        layout.addLayout(btn_layout)
+        snooze_btn.clicked.connect(lambda: self.snooze_alarm(task, dialog))
+        dismiss_btn.clicked.connect(lambda: self.dismiss_alarm(task, dialog))
+        if self.ringtone and os.path.exists(self.ringtone):
+            try:
+                pygame.mixer.music.load(self.ringtone)
+                pygame.mixer.music.play()
+            except Exception as e:
+                logging.error(f"Error playing ringtone: {e}")
+        else:
+            QApplication.beep()
+        dialog.exec()
+
+    def snooze_alarm(self, task, dialog):
+        pygame.mixer.music.stop()
+        dt = self.parse_due_date(task[3])
+        new_dt = dt + timedelta(minutes=5)
+        new_due = new_dt.strftime("%Y-%m-%d %H:%M:%S") if self.military_time else new_dt.strftime("%Y-%m-%d %I:%M:%S %p")
+        self.db.update_task(task[0], task[1], task[2], new_due, task[4], task[5])
+        if task[0] in self.triggered_tasks:
+            self.triggered_tasks.remove(task[0])
+        dialog.accept()
+        self.load_tasks()
+
+    def dismiss_alarm(self, task, dialog):
+        pygame.mixer.music.stop()
+        self.db.mark_complete(task[0])
+        dialog.accept()
+
+    # ---------------- Appearance and Window Behavior ------------------
+    def apply_settings(self):
+        if self.always_on_top:
+            self.setWindowFlag(Qt.WindowStaysOnTopHint, True)
+        else:
+            self.setWindowFlag(Qt.WindowStaysOnTopHint, False)
+        self.update_styles()
+        self.load_tasks()
+
+    def update_clock(self):
+        now = datetime.now()
+        if self.military_time:
+            self.clock_label.setText(now.strftime("%H:%M:%S"))
+        else:
+            self.clock_label.setText(now.strftime("%I:%M:%S %p"))
+
+    def changeEvent(self, event):
+        if event.type() == QEvent.WindowStateChange:
+            if self.windowState() & Qt.WindowMinimized:
+                self.show_minimized_widget()
+        super().changeEvent(event)
+
+    # ----------------- Updated Minimize / Restore Methods ------------------
+    def show_minimized_widget(self):
+        self.minimized_widget = MinimizedWindow(self, self.dark_mode, self.always_on_top)
+        self.minimized_widget.move(self.pos())  
+        self.minimized_widget.show()
+        self.hide()
+
+    def restore_from_minimized(self):
+        if self.minimized_widget:
+            saved_pos = self.minimized_widget.pos()  
+            self.minimized_widget.close()
+            self.minimized_widget = None
+            self.move(saved_pos)  
+        self.showNormal()
+        self.show_main_page()
+
+    # ---------------------- Emoji Easter Egg Handler --------------------
+    def handle_emoji_clicked(self):
+        self.emoji_click_count += 1
+        if self.emoji_click_count >= 3:  
+            self.emoji_click_count = 0 
+            
+            honk_path = os.path.join(os.path.dirname(__file__), "honk", "honk.mp3")
+            if os.path.exists(honk_path):
+                try:
+                    pygame.mixer.music.load(honk_path)
+                    pygame.mixer.music.play()
+                except Exception as e:
+                    logging.error("Error playing honk sound: " + str(e))
+            else:
+                logging.error("Honk sound file not found: " + honk_path)
+
+# --------------------------------------------------------------------------
+# Main Block
+# --------------------------------------------------------------------------
+if __name__ == '__main__':
+    try:
+        app = QApplication(sys.argv)
+        window = Taskley()
+        window.apply_settings()
+        window.show()
+        sys.exit(app.exec())
+    except Exception as e:
+        logging.critical(f"Unhandled exception in main: {e}")
