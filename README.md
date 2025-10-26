@@ -8,6 +8,8 @@
 
 <h2 align="center">Screenshots</h2>
 
+<br><br>
+
 <div align="center">
   <p align="center"><strong>Light Mode</strong></p>
   <p align="center">
