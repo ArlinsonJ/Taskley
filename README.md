@@ -9,7 +9,7 @@
 
 <h2 align="center">Screenshots</h2>
 
-<div align="center" style="margin-bottom:36px;">
+<div align="center" style="margin-bottom:64px;">
   <p align="center"><strong>Light Mode</strong></p>
   <p align="center">
     <img alt="Taskley light mode screenshot" src="https://github.com/ArlinsonJ/Taskley/blob/e67439cc60936ea0b19fdbf790d047eb911eace5/Images/light-mode.png">
