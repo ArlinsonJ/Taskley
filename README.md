@@ -10,7 +10,7 @@ dark-mode.png <p align="center"> <img alt="Taskley dark mode screenshot" src="ht
 
 add-task.png <p align="center"> <img alt="Taskley add task screenshot" src="https://github.com/ArlinsonJ/Taskley/blob/e67439cc60936ea0b19fdbf790d047eb911eace5/Images/add-task.png.png"> </p> Description: Add Task page demonstrating the title, notes, due-date/timer controls, recurring toggle, and custom category input.
 
-task-details.png <p align="center"> <img alt="Taskley task details screenshot" src="https://github.com/ArlinsonJ/Taskley/blob/e67439cc60936ea0b19fdbf790d047eb911eace5/Images/task-details.pnghttps://github.com/ArlinsonJ/Taskley/blob/e67439cc60936ea0b19fdbf790d047eb911eace5/Images/task-details.png"> </p> Description: Task details view with formatted due date, notes, category, and recurring information.
+task-details.png <p align="center"> <img alt="Taskley task details screenshot" src="https://github.com/ArlinsonJ/Taskley/blob/78da200f799ed922944aad9637710c938e9b4e22/Images/task-details.png"> </p> Description: Task details view with formatted due date, notes, category, and recurring information.
 
 edit-task.png <p align="center"> <img alt="Taskley edit task screenshot" src="https://github.com/ArlinsonJ/Taskley/blob/e67439cc60936ea0b19fdbf790d047eb911eace5/Images/edit-task.png"> </p> Description: Edit Task page pre-filled with Title, Notes, Due Date/Timer, Category (including custom), and Recurring toggle; inline validation for Title.
 
