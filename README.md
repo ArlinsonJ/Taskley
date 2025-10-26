@@ -106,7 +106,7 @@
 
 <p align="center"> Do <strong>not</strong> commit runtime files to Git </p>
 
-<p align="center"> <code>taskley.db</code><br> <code>taskley.log</code><br> <code>pycache/</code><br> <code>venv//</code><br> <code>*.pyc</code><br> <code>.vscode/</code><br> <code>.DS_Store</code><br> <code>Thumbs.db</code> </p>
+<p align="center"> <code>taskley.db</code><br> <code>taskley.log</code><br> <code>pycache/</code><br> <code>venv/</code><br> <code>*.pyc</code><br> <code>.vscode/</code><br> <code>.DS_Store</code><br> <code>Thumbs.db</code> </p>
 
 <p align="center"> 🎶 Only include MP3s you have rights to redistribute.<br> 📦 For packaging or distribution, consider packaging tools and test audio on target platforms.<br> 🔊 When testing, pick a ringtone file accessible on your system; Taskley stores the absolute path and will fail if the file is moved or deleted. </p>
 
