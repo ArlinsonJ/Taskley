@@ -9,47 +9,61 @@
 
 <h2 align="center">Screenshots</h2>
 
-<p align="center"><strong>Light Mode</strong></p>
-<p align="center">
-  <img alt="Taskley light mode screenshot" src="https://github.com/ArlinsonJ/Taskley/blob/e67439cc60936ea0b19fdbf790d047eb911eace5/Images/light-mode.png">
-</p>
-<p align="center">Main app window in the light theme showing the logo, task list, filters, and primary actions</p>
+<div align="center" style="margin-bottom:36px;">
+  <p align="center"><strong>Light Mode</strong></p>
+  <p align="center">
+    <img alt="Taskley light mode screenshot" src="https://github.com/ArlinsonJ/Taskley/blob/e67439cc60936ea0b19fdbf790d047eb911eace5/Images/light-mode.png">
+  </p>
+  <p align="center">Main app window in the light theme showing the logo, task list, filters, and primary actions</p>
+</div>
 
-<p align="center"><strong>Dark Mode</strong></p>
-<p align="center">
-  <img alt="Taskley dark mode screenshot" src="https://github.com/ArlinsonJ/Taskley/blob/e67439cc60936ea0b19fdbf790d047eb911eace5/Images/dark-mode.png">
-</p>
-<p align="center">Same main view using the dark theme to show colors, contrast, and style parity. Dark Mode displays times in military format as it was tuned on in settings</p>
+<div align="center" style="margin-bottom:36px;">
+  <p align="center"><strong>Dark Mode</strong></p>
+  <p align="center">
+    <img alt="Taskley dark mode screenshot" src="https://github.com/ArlinsonJ/Taskley/blob/e67439cc60936ea0b19fdbf790d047eb911eace5/Images/dark-mode.png">
+  </p>
+  <p align="center">Same main view using the dark theme to show colors, contrast, and style parity. Dark Mode displays times in military format as it was tuned on in settings</p>
+</div>
 
-<p align="center"><strong>Add Task</strong></p>
-<p align="center">
-  <img alt="Taskley add task screenshot" src="https://github.com/ArlinsonJ/Taskley/blob/e67439cc60936ea0b19fdbf790d047eb911eace5/Images/add-task.png.png">
-</p>
-<p align="center">Add Task page demonstrating the title, notes, due-date/timer controls, recurring toggle, and custom category input</p>
+<div align="center" style="margin-bottom:36px;">
+  <p align="center"><strong>Add Task</strong></p>
+  <p align="center">
+    <img alt="Taskley add task screenshot" src="https://github.com/ArlinsonJ/Taskley/blob/e67439cc60936ea0b19fdbf790d047eb911eace5/Images/add-task.png.png">
+  </p>
+  <p align="center">Add Task page demonstrating the title, notes, due-date/timer controls, recurring toggle, and custom category input</p>
+</div>
 
-<p align="center"><strong>Task Details</strong></p>
-<p align="center">
-  <img alt="Taskley task details screenshot" src="https://github.com/ArlinsonJ/Taskley/blob/78da200f799ed922944aad9637710c938e9b4e22/Images/task-details.png">
-</p>
-<p align="center">Task details view with formatted due date, notes, category, and recurring information</p>
+<div align="center" style="margin-bottom:36px;">
+  <p align="center"><strong>Task Details</strong></p>
+  <p align="center">
+    <img alt="Taskley task details screenshot" src="https://github.com/ArlinsonJ/Taskley/blob/78da200f799ed922944aad9637710c938e9b4e22/Images/task-details.png">
+  </p>
+  <p align="center">Task details view with formatted due date, notes, category, and recurring information</p>
+</div>
 
-<p align="center"><strong>Edit Task</strong></p>
-<p align="center">
-  <img alt="Taskley edit task screenshot" src="https://github.com/ArlinsonJ/Taskley/blob/e67439cc60936ea0b19fdbf790d047eb911eace5/Images/edit-task.png">
-</p>
-<p align="center">Edit Task page pre-filled with Title, Notes, Due Date/Timer, Category, and Recurring toggle</p>
+<div align="center" style="margin-bottom:36px;">
+  <p align="center"><strong>Edit Task</strong></p>
+  <p align="center">
+    <img alt="Taskley edit task screenshot" src="https://github.com/ArlinsonJ/Taskley/blob/e67439cc60936ea0b19fdbf790d047eb911eace5/Images/edit-task.png">
+  </p>
+  <p align="center">Edit Task page pre-filled with Title, Notes, Due Date/Timer, Category, and Recurring toggle</p>
+</div>
 
-<p align="center"><strong>Settings</strong></p>
-<p align="center">
-  <img alt="Taskley settings screenshot" src="https://github.com/ArlinsonJ/Taskley/blob/e67439cc60936ea0b19fdbf790d047eb911eace5/Images/settings.png">
-</p>
-<p align="center">Settings page showing toggles (Dark Mode, Military Time, Stay on Top), and ringtone selector</p>
+<div align="center" style="margin-bottom:36px;">
+  <p align="center"><strong>Settings</strong></p>
+  <p align="center">
+    <img alt="Taskley settings screenshot" src="https://github.com/ArlinsonJ/Taskley/blob/e67439cc60936ea0b19fdbf790d047eb911eace5/Images/settings.png">
+  </p>
+  <p align="center">Settings page showing toggles (Dark Mode, Military Time, Stay on Top), and ringtone selector</p>
+</div>
 
-<p align="center"><strong>Minimized</strong></p>
-<p align="center">
-  <img alt="Taskley minimized widget screenshot" src="https://github.com/ArlinsonJ/Taskley/blob/e67439cc60936ea0b19fdbf790d047eb911eace5/Images/minimized.png">
-</p>
-<p align="center">Squircle minimized widget displayed after minimizing the app, showing the compact logo and drag behavior</p>
+<div align="center" style="margin-bottom:36px;">
+  <p align="center"><strong>Minimized</strong></p>
+  <p align="center">
+    <img alt="Taskley minimized widget screenshot" src="https://github.com/ArlinsonJ/Taskley/blob/e67439cc60936ea0b19fdbf790d047eb911eace5/Images/minimized.png">
+  </p>
+  <p align="center">Squircle minimized widget displayed after minimizing the app, showing the compact logo and drag behavior</p>
+</div>
 
 <h2 align="center">📝 About</h2>
 
