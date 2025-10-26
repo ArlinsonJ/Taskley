@@ -5,7 +5,7 @@
 <h1 align="center"><strong>Taskley</strong> — A Lightweight Desktop Task Manager with Reminders</h1>
 
 
-<div align="center" style="margin-top:48px;"></div>
+<div align="center" style="margin-top:64px;"></div>
 
 <h2 align="center">Screenshots</h2>
 
