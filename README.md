@@ -90,7 +90,13 @@
 
 <h2 align="center">Requirements</h2>
 
-<p align="center"> <strong>Python 3.9+</strong> recommended<br> <strong>PySide6</strong> for the UI<br> <strong>pygame</strong> for MP3 playback (platform codec support may vary) </p>
+<p align="center"> <strong>Python 3.9+</strong> recommended<br> <strong>PySide6</strong> for the UI<br> <strong>pygame</strong> for MP3 playback (platform codec support may vary)<br>
+<em>(The included run.bat and run.sh will create a virtual environment and can install PySide6 and pygame for you if they are missing.)</em>
+</p>
+
+<h2 align="center">How to run</h2>
+
+<p align="center">For Windows: double-click or run <code>run.bat</code>. The script creates and activates a virtual environment if needed, installs dependencies, and launches Taskley without leaving a console window open for the GUI. For Linux and macOS: make <code>run.sh</code> executable (<code>chmod +x run.sh</code>) and run it from the project folder; it will create or reuse a virtual environment, install dependencies if necessary, and start Taskley. If Python is not installed, follow the prompt the script provides to install Python 3.10+ before re-running.</p>
 
 <h2 align="center">Configuration</h2>
 
